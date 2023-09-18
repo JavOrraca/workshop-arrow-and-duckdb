@@ -60,7 +60,6 @@ register_scalar_function(
 )
 
 nyc_taxi |> 
-  arrow::to_duckdb() |> 
   mutate(vendor_name = replace_arrow_nas(vendor_name, "No vendor")) |> 
   distinct(vendor_name) |> 
   head() |> 
