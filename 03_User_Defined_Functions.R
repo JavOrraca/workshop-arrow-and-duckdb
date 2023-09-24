@@ -41,6 +41,10 @@ nyc_taxi |>
 
 # Now, try a user-defined function to wrap str_replace_na
 
+nyc_taxi |> 
+  distinct(vendor_name) |> 
+  collect()
+
 replace_arrow_nas <- function(x, replacement) {
   stringr::str_replace_na(x, replacement)
 }
@@ -60,6 +64,7 @@ register_scalar_function(
 )
 
 nyc_taxi |> 
+  filter(is.na(vendor_name)) |> 
   mutate(vendor_name = replace_arrow_nas(vendor_name, "No vendor")) |> 
   distinct(vendor_name) |> 
   head() |> 
@@ -96,7 +101,7 @@ nyc_taxi |>
   left_join(nyc_taxi_zones, by = c("pickup_location_id" = "location_id")) |>
   collect()
 
-schema(nyc_taxi)
+arrow::schema(nyc_taxi)
 
 nyc_taxi_zones_arrow <- arrow_table(nyc_taxi_zones)
 

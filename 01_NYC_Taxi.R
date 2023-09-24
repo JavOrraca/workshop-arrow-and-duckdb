@@ -4,14 +4,25 @@ library(tictoc)
 
 nyc_taxi <- open_dataset(here::here("data/nyc-taxi"))
 
-nyc_taxi
-
 glimpse(nyc_taxi)
 
 nyc_taxi |> 
   nrow()
 
-# Question - Is there a way to create a custom binding such that Arrow could process scales::percent()
+bnch <- bench::mark(
+  min_iterations = 10,
+  arrow = nyc_taxi |> 
+    dplyr::group_by(year) |> 
+    dplyr::summarise(all_trips = n(),
+                     shared_trips = sum(passenger_count > 1, na.rm = T)) |>
+    dplyr::mutate(pct_shared = shared_trips / all_trips * 100) |> 
+    dplyr::collect()
+)
+
+library(ggplot2)
+
+autoplot(bnch)
+
 tic()
 nyc_taxi |> 
   group_by(year) |> 

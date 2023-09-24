@@ -50,3 +50,5 @@ rsconnect/
 
 # do not push data folder
 data/
+
+.DS_Store
