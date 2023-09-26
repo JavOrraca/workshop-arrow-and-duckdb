@@ -5,6 +5,9 @@ library(tictoc)
 library(duckplyr)
 library(ggplot2)
 
+# I manually iterated over the code below to benchmark
+# and compare performance on 1 million, 10 million, 100
+# million, and 500 million rows
 nyc_taxi_tibble <- open_dataset("data/nyc-taxi") |> 
   dplyr::select(year, passenger_count) |>
   dplyr::collect() |> 

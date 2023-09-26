@@ -24,7 +24,7 @@ seattle_csv <- open_dataset(
     CheckoutMonth = int64(),
     Checkouts = int64(),
     Title = utf8(),
-    ISBN = string(), #utf8()
+    ISBN = string(), #utf8() was replaced since this field is a string()
     Creator = utf8(),
     Subjects = utf8(),
     Publisher = utf8(),
