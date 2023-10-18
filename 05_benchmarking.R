@@ -1,3 +1,7 @@
+
+# Load Libraries ----------------------------------------------------------
+
+require(here)
 library(arrow)
 library(dplyr)
 library(stringr)
@@ -5,13 +9,27 @@ library(tictoc)
 library(duckplyr)
 library(ggplot2)
 
-# I manually iterated over the code below to benchmark
+
+# Download Data -----------------------------------------------------------
+
+# Download 40GB (1.1 billion rows) of NYC Taxi rides
+# NOTE: This may take several hours
+data_path <- here::here("data/nyc-taxi")
+
+open_dataset("s3://voltrondata-labs-datasets/nyc-taxi") |>
+  filter(year %in% 2012:2021) |>
+  write_dataset(data_path, partitioning = c("year", "month"))
+
+
+# Subset & Benchmark ------------------------------------------------------
+
+# Manually iterated over the code below to benchmark
 # and compare performance on 1 million, 10 million, 100
 # million, and 500 million rows
 nyc_taxi_tibble <- open_dataset("data/nyc-taxi") |> 
   dplyr::select(year, passenger_count) |>
   dplyr::collect() |> 
-  dplyr::slice_sample(n = 500000000)
+  dplyr::slice_sample(n = 1000000)
 
 nyc_taxi <- nyc_taxi_tibble |>
   arrow::as_arrow_table()
@@ -37,10 +55,11 @@ bnch <- bench::mark(
     duckplyr::filter(passenger_count > 1) |> 
     duckplyr::summarise(
       all_trips = n(),
-      shared_trips = sum(passenger_count, na.rm = T),
+      shared_trips = sum(passenger_count),
       .by = year
       ) |>
-    duckplyr::mutate(pct_shared = shared_trips / all_trips * 100),
+    duckplyr::mutate(pct_shared = shared_trips / all_trips * 100) |> 
+    duckplyr::collect(),
   tibble_to_dplyr = nyc_taxi_tibble |> 
     dplyr::filter(passenger_count > 1) |> 
     dplyr::group_by(year) |> 
@@ -70,13 +89,18 @@ bnch <- bench::mark(
     duckplyr::filter(passenger_count > 1) |> 
     duckplyr::summarise(
       all_trips = n(),
-      shared_trips = sum(passenger_count, na.rm = T),
+      shared_trips = sum(passenger_count),
       .by = year
     ) |>
-    duckplyr::mutate(pct_shared = shared_trips / all_trips * 100),
+    duckplyr::mutate(pct_shared = shared_trips / all_trips * 100) |> 
+    duckplyr::collect(),
   check = FALSE
 )
 toc()
 
 autoplot(bnch)
 
+
+# Session Info ------------------------------------------------------------
+
+sessionInfo()
