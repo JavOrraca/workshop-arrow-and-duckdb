@@ -30,7 +30,7 @@ open_dataset("s3://voltrondata-labs-datasets/nyc-taxi") |>
 nyc_taxi_tibble <- open_dataset("data/nyc-taxi") |> 
   dplyr::select(year, passenger_count) |>
   dplyr::collect() |> 
-  dplyr::slice_sample(n = 500000000)
+  dplyr::slice_sample(n = 1000000)
 
 nyc_taxi <- nyc_taxi_tibble |>
   arrow::as_arrow_table()
@@ -38,7 +38,7 @@ nyc_taxi <- nyc_taxi_tibble |>
 nyc_taxi_duckplyr_df <- nyc_taxi_tibble |>
   duckplyr::as_duckplyr_df()
 
-# nyc_taxi_polars <- pl$DataFrame(nyc_taxi_tibble)$lazy()
+nyc_taxi_polars <- pl$DataFrame(nyc_taxi_tibble)$lazy()
 
 tic()
 bnch <- bench::mark(
@@ -85,21 +85,21 @@ bnch <- bench::mark(
                         .by = c(year, all_trips)) |>
     duckplyr::mutate(pct_shared = shared_trips / all_trips * 100) |>
     duckplyr::collect(),
-  # polars = nyc_taxi_polars$
-  #   select(pl$col(c("year", "passenger_count")))$
-  #   with_columns(
-  #     pl$count()$
-  #       over("year")$
-  #       alias("all_trips")
-  #   )$
-  #   filter(pl$col("passenger_count") > 1)$
-  #   group_by(c("year", "all_trips"))$
-  #   agg(
-  #     pl$count()$alias("shared_trips")
-  #   )$
-  #   collect()$
-  #   to_data_frame() |>
-  #   mutate(pct_shared = shared_trips / all_trips * 100),
+  polars = nyc_taxi_polars$
+    select(pl$col(c("year", "passenger_count")))$
+    with_columns(
+      pl$count()$
+        over("year")$
+        alias("all_trips")
+    )$
+    filter(pl$col("passenger_count") > 1)$
+    group_by(c("year", "all_trips"))$
+    agg(
+      pl$count()$alias("shared_trips")
+    )$
+    collect()$
+    to_data_frame() |>
+    mutate(pct_shared = shared_trips / all_trips * 100),
   check = FALSE
 )
 toc()
