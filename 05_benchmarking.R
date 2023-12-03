@@ -26,11 +26,13 @@ open_dataset("s3://voltrondata-labs-datasets/nyc-taxi") |>
 
 # Manually iterated over the code below to benchmark
 # and compare performance on 1 million, 10 million, 100
-# million, and 500 million rows
-nyc_taxi_tibble <- open_dataset("data/nyc-taxi") |> 
-  dplyr::select(year, passenger_count) |>
-  dplyr::collect() |> 
-  dplyr::slice_sample(n = 1000000)
+# million, and 1.1 billion rows
+nyc_taxi_arrow <- open_dataset("data/nyc-taxi") |> 
+  dplyr::select(year, passenger_count)
+
+nyc_taxi_tibble <- nyc_taxi_arrow |> 
+  dplyr::collect() |>
+  dplyr::slice_sample(n = 50000000)
 
 nyc_taxi <- nyc_taxi_tibble |>
   arrow::as_arrow_table()
@@ -69,6 +71,12 @@ bnch <- bench::mark(
                      shared_trips = sum(passenger_count > 1, na.rm = T)) |>
     dplyr::mutate(pct_shared = shared_trips / all_trips * 100) |>
     dplyr::collect(),
+  # arrow = nyc_taxi_tibble |>
+  #   dplyr::group_by(year) |>
+  #   dplyr::summarise(all_trips = n(),
+  #                    shared_trips = sum(passenger_count > 1, na.rm = T)) |>
+  #   dplyr::mutate(pct_shared = shared_trips / all_trips * 100) |>
+  #   dplyr::collect(),
   arrow_to_duckdb = nyc_taxi |>
     arrow::to_duckdb() |>
     dplyr::mutate(all_trips = n(), .by = year) |>
